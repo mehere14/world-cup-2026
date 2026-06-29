@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Cup 2026 — Radial Bracket</title>
+  <meta name="theme-color" content="#f1ede3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <p>UNITED 2026 · LIVE KNOCKOUT BRACKET</p>
+    <div class="status-key">
+      <span id="dataStatus">Connecting to football-data.org…</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="title-block">
+      <h1>World Cup 2026</h1>
+      <p>Follow the line inward. Hover any node for match details.</p>
+    </div>
+
+    <section class="poster" aria-label="Interactive World Cup 2026 radial knockout bracket">
+      <svg id="bracket" viewBox="0 0 1000 1000" role="img" aria-labelledby="svgTitle svgDesc">
+        <title id="svgTitle">World Cup 2026 radial bracket</title>
+        <desc id="svgDesc">Thirty-two teams arranged in a circle, advancing toward the World Cup trophy.</desc>
+      </svg>
+      <div class="round-guide guide-32">ROUND OF 32</div>
+      <div class="round-guide guide-16">ROUND OF 16</div>
+      <div class="round-guide guide-qf">QUARTER-FINALS</div>
+      <div class="round-guide guide-sf">SEMI-FINALS</div>
+    </section>
+
+    <div class="instruction">
+      <span class="pulse-dot"></span>
+      <span>Hover or tap a match node</span>
+    </div>
+  </main>
+
+  <footer>
+    <span>WC · 26</span>
+    <span class="monogram">as</span>
+    <span>Data: football-data.org · Trophy: Marco Hernandez</span>
+  </footer>
+
+  <aside class="popover" id="popover" aria-live="polite"></aside>
+  <script src="app.js"></script>
+</body>
+</html>
