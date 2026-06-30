@@ -300,14 +300,23 @@ function apiGame(match, round, slot, from) {
 
   const full = match.score?.fullTime;
   const hasScore = Number.isFinite(full?.home) && Number.isFinite(full?.away);
-  const winner = match.status === "FINISHED"
-    ? match.score?.winner === "HOME_TEAM"
-      ? home
-      : match.score?.winner === "AWAY_TEAM"
-        ? away
-        : null
-    : null;
   const penalties = match.score?.penalties;
+  let winner = null;
+  if (match.status === "FINISHED") {
+    if (match.score?.winner === "HOME_TEAM") {
+      winner = home;
+    } else if (match.score?.winner === "AWAY_TEAM") {
+      winner = away;
+    } else if (hasScore && full.home !== full.away) {
+      winner = full.home > full.away ? home : away;
+    } else if (
+      Number.isFinite(penalties?.home) &&
+      Number.isFinite(penalties?.away) &&
+      penalties.home !== penalties.away
+    ) {
+      winner = penalties.home > penalties.away ? home : away;
+    }
+  }
   const duration = match.score?.duration === "EXTRA_TIME"
     ? "120 minutes"
     : match.score?.duration === "PENALTY_SHOOTOUT"

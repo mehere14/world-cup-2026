@@ -238,7 +238,12 @@ footer {
 }
 
 footer span:last-child { text-align: right; }
-.monogram { justify-self: center; color: var(--ink); font: 700 24px "DM Sans", sans-serif; letter-spacing: -.14em; }
+.credit {
+  justify-self: center;
+  color: var(--ink);
+  font: 700 10px "Space Mono", monospace;
+  letter-spacing: .05em;
+}
 
 @media (max-width: 700px) {
   header { height: 50px; }
