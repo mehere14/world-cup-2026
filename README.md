@@ -2,6 +2,8 @@
 
 An interactive radial World Cup knockout bracket with live match states, advancing-team flags, node-based match details, and responsive SVG animations.
 
+![World Cup 2026 Interactive Bracket Demo](football-2026.gif)
+
 ## Backend and data
 
 - **Runtime:** Node.js 18+
