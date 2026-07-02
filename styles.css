@@ -65,7 +65,7 @@ h1 {
   position: relative;
   width: min(1120px, calc(100vw - 30px));
   margin: 16px auto 0;
-  aspect-ratio: 1;
+  aspect-ratio: 1000 / 930;
 }
 
 #bracket { width: 100%; height: 100%; overflow: visible; }
@@ -168,7 +168,7 @@ h1 {
   justify-content: center;
   align-items: center;
   gap: 9px;
-  margin-top: -8px;
+  margin-top: 8px;
   color: var(--quiet);
   font: 400 8px "Space Mono", monospace;
   text-transform: uppercase;

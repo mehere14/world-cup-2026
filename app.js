@@ -61,6 +61,7 @@ let byId = {};
 const roundTitle = ["Round of 32","Round of 16","Quarter-final","Semi-final"];
 const center = 500;
 const radii = [350,265,182,105];
+const innerFlagRadius = 12 * 1.6;
 const coords = {};
 const angleFor = (round, slot) => -90 - (slot + .5) * (360 / (16 / 2 ** round));
 const point = (radius, degrees) => {
@@ -125,10 +126,22 @@ function flagArt(code) {
   return common[code] || `<rect width="40" height="40" fill="#ded8cb"/><text x="20" y="23" text-anchor="middle" font-size="9" font-family="monospace" fill="#292a28">${code || "?"}</text>`;
 }
 
+function crestArt(code) {
+  if (!crestByCode[code]) return flagArt(code);
+  if (code === "CAN") {
+    return `<rect width="40" height="40" fill="#d52b1e"/>
+      <rect x="10" width="20" height="40" fill="#fff"/>
+      <image href="${crestByCode[code]}" y="10" width="40" height="20" preserveAspectRatio="xMidYMid meet"/>`;
+  }
+  if (code === "BIH") {
+    return `<rect width="40" height="40" fill="#002395"/>
+      <image href="${crestByCode[code]}" y="10" width="40" height="20" preserveAspectRatio="xMidYMid meet"/>`;
+  }
+  return `<image href="${crestByCode[code]}" x="-10" y="-10" width="60" height="60" preserveAspectRatio="xMidYMid slice"/>`;
+}
+
 function flagSVG(code, x, y, r, id, cls="") {
-  const art = crestByCode[code]
-    ? `<image href="${crestByCode[code]}" x="-10" y="-10" width="60" height="60" preserveAspectRatio="xMidYMid slice"/>`
-    : flagArt(code);
+  const art = crestArt(code);
   return `<g class="flag-roundel ${cls}" transform="translate(${x-r} ${y-r}) scale(${r/20})">
     <defs><clipPath id="clip-${id}"><circle cx="20" cy="20" r="19"/></clipPath></defs>
     <g clip-path="url(#clip-${id})">${art}</g>
@@ -190,10 +203,11 @@ function matchNodes() {
     const teams = resolved(g);
     const angle = angleFor(g.r,g.s);
     const tangent = angle + 90;
-    const tx = x + Math.cos(tangent*Math.PI/180)*18;
-    const ty = y + Math.sin(tangent*Math.PI/180)*18;
+    const scoreOffset = g.w ? 28 : 18;
+    const tx = x + Math.cos(tangent*Math.PI/180)*scoreOffset;
+    const ty = y + Math.sin(tangent*Math.PI/180)*scoreOffset;
     const score = g.sc ? `${g.sc[0]}–${g.sc[1]}` : st==="pending" ? "VS" : st==="live" ? "LIVE" : "";
-    const winnerFlag = g.w ? flagSVG(g.w,x,y,12,`winner-${g.id}`,"winner-flag") : "";
+    const winnerFlag = g.w ? flagSVG(g.w,x,y,innerFlagRadius,`winner-${g.id}`,"winner-flag") : "";
     return `<g class="match-group" data-id="${g.id}" tabindex="0" role="button" aria-label="${roundTitle[g.r]}: ${teams[0]?team[teams[0]][0]:"to be decided"} versus ${teams[1]?team[teams[1]][0]:"to be decided"}" style="animation-delay:${i*20}ms">
       ${st==="live" ? `<circle class="live-halo" cx="${x}" cy="${y}" r="5"/>` : ""}
       ${winnerFlag || `<circle class="node-core ${st}" cx="${x}" cy="${y}" r="${g.r===0?4.4:5}"/>`}
@@ -216,9 +230,7 @@ const svg = document.getElementById("bracket");
 
 function miniFlag(code) {
   if (!code) return `<span class="mini-flag"></span>`;
-  const art = crestByCode[code]
-    ? `<image href="${crestByCode[code]}" x="-10" y="-10" width="60" height="60" preserveAspectRatio="xMidYMid slice"/>`
-    : flagArt(code);
+  const art = crestArt(code);
   return `<svg class="mini-flag" viewBox="0 0 40 40"><defs><clipPath id="mini-${code}"><circle cx="20" cy="20" r="19"/></clipPath></defs><g clip-path="url(#mini-${code})">${art}</g><circle cx="20" cy="20" r="19" fill="none" stroke="#f1ede3" stroke-width="1.5"/></svg>`;
 }
 
