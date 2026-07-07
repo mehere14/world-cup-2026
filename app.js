@@ -58,12 +58,20 @@ let games = prototypeGames.map(({sc,pen,w,date,place,time,goals,...game}) => ({
 }));
 
 let byId = {};
+let champion = null;
 const roundTitle = ["Round of 32","Round of 16","Quarter-final","Semi-final"];
 const center = 500;
 const radii = [350,265,182,105];
 const innerFlagRadius = 12 * 1.6;
+const branchDrawMs = 200;
+const flagRevealFraction = .25;
+const stagePauseMs = 0;
+const stageIntervalMs = branchDrawMs + stagePauseMs;
 const coords = {};
 const angleFor = (round, slot) => -90 - (slot + .5) * (360 / (16 / 2 ** round));
+const branchDelay = round => round * stageIntervalMs;
+const flagDelay = round => branchDelay(round) + branchDrawMs * flagRevealFraction;
+const championDelay = () => branchDelay(4) + branchDrawMs;
 const point = (radius, degrees) => {
   const a = degrees * Math.PI / 180;
   return [center + Math.cos(a)*radius, center + Math.sin(a)*radius];
@@ -166,6 +174,7 @@ function outerTeams() {
 
 function branches() {
   let out = "";
+  const branchPath = (cls, d, delay) => `<path class="branch ${cls}"${delay == null ? "" : ` style="--branch-delay:${delay}ms"`} d="${d}"/>`;
   games.forEach((g,i) => {
     const target = coords[g.id];
     if (g.r===0) {
@@ -174,7 +183,9 @@ function branches() {
         const teamAngle = base+(j?5.2:-5.2);
         const source = point(424,teamAngle);
         const stem = point(394,teamAngle);
-        out += `<path class="branch ${state(g)==="complete"?"advanced":"pending"}" style="animation-delay:${i*25}ms" d="M${source[0]} ${source[1]} L${stem[0]} ${stem[1]} L${target[0]} ${target[1]}"/>`;
+        const d = `M${source[0]} ${source[1]} L${stem[0]} ${stem[1]} L${target[0]} ${target[1]}`;
+        if (state(g)==="complete") out += branchPath("pending branch-guide",d);
+        out += branchPath(state(g)==="complete"?"advanced":"pending",d,branchDelay(g.r));
       });
     } else {
       g.from.forEach(id => {
@@ -184,14 +195,19 @@ function branches() {
         const stemLength = [30,27,23,18][child.r];
         const stem = point(radii[child.r]-stemLength,childAngle);
         const done = byId[id].w;
-        out += `<path class="branch ${done?"advanced":"pending"}" style="animation-delay:${i*25}ms" d="M${source[0]} ${source[1]} L${stem[0]} ${stem[1]} L${target[0]} ${target[1]}"/>`;
+        const d = `M${source[0]} ${source[1]} L${stem[0]} ${stem[1]} L${target[0]} ${target[1]}`;
+        if (done) out += branchPath("pending branch-guide",d);
+        out += branchPath(done?"advanced":"pending",d,branchDelay(g.r));
       });
     }
   });
   games.filter(g=>g.r===3).forEach(g => {
     const source=coords[g.id];
     const stem=point(radii[3]-22,angleFor(g.r,g.s));
-    out += `<path class="branch pending" d="M${source[0]} ${source[1]} L${stem[0]} ${stem[1]} L500 500"/>`;
+    const finalClass = g.w ? "advanced final-branch" : "pending";
+    const d = `M${source[0]} ${source[1]} L${stem[0]} ${stem[1]} L500 500`;
+    if (g.w) out += branchPath("pending branch-guide",d);
+    out += branchPath(finalClass,d,g.w ? branchDelay(4) : null);
   });
   return out;
 }
@@ -208,9 +224,10 @@ function matchNodes() {
     const ty = y + Math.sin(tangent*Math.PI/180)*scoreOffset;
     const score = g.sc ? `${g.sc[0]}–${g.sc[1]}` : st==="pending" ? "VS" : st==="live" ? "LIVE" : "";
     const winnerFlag = g.w ? flagSVG(g.w,x,y,innerFlagRadius,`winner-${g.id}`,"winner-flag") : "";
-    return `<g class="match-group" data-id="${g.id}" tabindex="0" role="button" aria-label="${roundTitle[g.r]}: ${teams[0]?team[teams[0]][0]:"to be decided"} versus ${teams[1]?team[teams[1]][0]:"to be decided"}" style="animation-delay:${i*20}ms">
+    const nodeCore = `<circle class="node-core ${g.w ? "pending staged-placeholder" : st}" cx="${x}" cy="${y}" r="${g.r===0?4.4:5}"/>`;
+    return `<g class="match-group" data-id="${g.id}" tabindex="0" role="button" aria-label="${roundTitle[g.r]}: ${teams[0]?team[teams[0]][0]:"to be decided"} versus ${teams[1]?team[teams[1]][0]:"to be decided"}" style="--flag-delay:${flagDelay(g.r)}ms;animation-delay:${i*20}ms">
       ${st==="live" ? `<circle class="live-halo" cx="${x}" cy="${y}" r="5"/>` : ""}
-      ${winnerFlag || `<circle class="node-core ${st}" cx="${x}" cy="${y}" r="${g.r===0?4.4:5}"/>`}
+      ${nodeCore}${winnerFlag}
       <circle class="match-target" cx="${x}" cy="${y}" r="21"/>
       ${score?`<text class="score ${st}" x="${tx}" y="${ty+3}">${score}</text>`:""}
       ${g.pen?`<text class="pen-note" x="${tx}" y="${ty+11}">P ${g.pen[0]}–${g.pen[1]}</text>`:""}
@@ -219,11 +236,44 @@ function matchNodes() {
 }
 
 function trophy() {
-  return `<g class="trophy" aria-label="World Cup trophy">
-    <circle class="center-ring" cx="500" cy="500" r="58"/>
-    <image href="assets/world-cup-trophy.svg" x="470" y="452" width="60" height="75" preserveAspectRatio="xMidYMid meet"/>
-    <text class="final-label" x="500" y="570">THE FINAL · 19 JUL</text>
+  return `<g class="trophy" aria-label="World Cup trophy" style="--champion-delay:${championDelay()}ms">
+    ${championCenter()}
+    <image class="trophy-icon ${champion ? "champion-trophy" : ""}" href="assets/world-cup-trophy.svg" x="470" y="452" width="60" height="75" preserveAspectRatio="xMidYMid meet"/>
+    ${confetti()}
+    <text class="final-label ${champion ? "champion-label" : ""}" x="500" y="570">${champion ? `CHAMPION · ${champion}` : "THE FINAL · 19 JUL"}</text>
   </g>`;
+}
+
+function championCenter() {
+  if (!champion) return `<circle class="center-ring" cx="500" cy="500" r="58"/>`;
+
+  return `<g class="champion-center" aria-label="${team[champion][0]} won the World Cup">
+    <defs><clipPath id="champion-clip"><circle cx="500" cy="500" r="58"/></clipPath></defs>
+    <g clip-path="url(#champion-clip)">
+      <svg class="champion-flag-fill" x="438" y="438" width="124" height="124" viewBox="0 0 40 40" preserveAspectRatio="xMidYMid slice">
+        ${crestArt(champion)}
+      </svg>
+    </g>
+    <circle class="center-ring champion-ring" cx="500" cy="500" r="58"/>
+  </g>`;
+}
+
+function confetti() {
+  if (!champion) return "";
+  const count = 2008;
+  const colors = ["#cf4939","#f1c83c","#1768ad","#18814d","#292a28","#78b5df"];
+  return `<g class="confetti" aria-hidden="true">${Array.from({length:count},(_,i) => {
+    const angle = (i / count) * Math.PI * 2;
+    const distance = 64 + (i % 6) * 15;
+    const x = Math.cos(angle) * distance;
+    const y = Math.sin(angle) * distance - 18 - (i % 4) * 8;
+    const color = colors[i % colors.length];
+    const delay = championDelay() + (i % 7) * 26;
+    const rotate = 180 + (i % 5) * 92;
+    const width = i % 3 === 0 ? 4 : 6;
+    const height = i % 2 === 0 ? 10 : 7;
+    return `<rect class="confetti-piece" x="${100 - width/2}" y="${100 - height/2}" width="${width}" height="${height}" rx="1" fill="${color}" style="--tx:${x}px;--ty:${y}px;--rot:${rotate}deg;animation-delay:${delay}ms"/>`;
+  }).join("")}</g>`;
 }
 
 const svg = document.getElementById("bracket");
@@ -394,6 +444,12 @@ function buildApiBracket(matches) {
   return built;
 }
 
+function finalChampion(matches) {
+  const final = matches.find(match => match.stage === "FINAL");
+  if (!final || final.status !== "FINISHED") return null;
+  return apiGame(final,4,0).w;
+}
+
 let refreshTimer;
 async function loadFootballData() {
   const status = document.getElementById("dataStatus");
@@ -408,6 +464,7 @@ async function loadFootballData() {
     const resetSeconds = Number(response.headers.get("x-requestcounter-reset")) || 60;
     if (!response.ok) throw new Error(`football-data.org returned ${response.status}`);
     const payload = await response.json();
+    champion = finalChampion(payload.matches || []);
     games = buildApiBracket(payload.matches || []);
     renderBracket();
 
@@ -421,6 +478,7 @@ async function loadFootballData() {
     refreshTimer = setTimeout(loadFootballData,Math.max(normalDelay,throttleDelay));
   } catch (error) {
     clearTimeout(requestTimeout);
+    champion = null;
     status.textContent = "Live data unavailable · showing bracket structure";
     console.error(error);
     clearTimeout(refreshTimer);

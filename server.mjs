@@ -12,7 +12,7 @@ const contentTypes = {
   ".svg":"image/svg+xml",
   ".json":"application/json; charset=utf-8"
 };
-const publicFiles = new Set(["index.html","app.js","styles.css"]);
+const publicFiles = new Set(["index.html","app.js","styles.css","demo.html","demo.js"]);
 let cachedWorldCup = null;
 let pendingWorldCupRequest = null;
 
